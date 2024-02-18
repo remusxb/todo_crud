@@ -1,0 +1,6 @@
+# Start with a very very loose rule
+# Please discuss with your team to define your git message convention
+# Reference: https://jorisroovers.com/gitlint/rules/
+
+[general]
+ignore=body-is-missing,title-min-length,title-max-length

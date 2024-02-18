@@ -1,0 +1,20 @@
+# Build
+FROM golang:1.22 as build
+
+WORKDIR /go/src/app
+
+# configuration to fetch private repos
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+RUN git config --global url.git@github.com:.insteadOf https://github.com/ \
+    && go env -w GOPRIVATE="github.com/remusxb/*"
+
+# Cache and install dependencies
+COPY go.mod go.sum ./
+RUN --mount=type=ssh go mod download
+
+COPY . .
+RUN --mount=type=ssh make tools
+
+
+RUN go install github.com/cosmtrek/air@latest
+ENTRYPOINT ["/go/bin/air", "--build.bin=/go/src/app/todo_crud", "--build.cmd=make build"]

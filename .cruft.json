@@ -1,0 +1,13 @@
+{
+  "template": "git@remusxb.github.com:remusxb/golang_templates.git",
+  "commit": "ee995dff8417f6f65d23dd7430cf2ac0c86fc4dd",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "app_name": "todo_crud",
+      "github_org": "remusxb",
+      "_template": "git@remusxb.github.com:remusxb/golang_templates.git"
+    }
+  },
+  "directory": "microservice_rest"
+}

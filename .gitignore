@@ -1,0 +1,7 @@
+/todo_crud
+.vscode/*
+.idea/*
+.DS_Store
+coverage-report.out
+venv/
+tmp/

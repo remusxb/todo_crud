@@ -1,0 +1,33 @@
+on:
+  workflow_call:
+    secrets:
+      GH_ACCESS_TOKEN:
+        description: 'Github Access Token to access private repos'
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 0
+      GOPRIVATE: github.com/remusxb/*
+      ACCESS_TOKEN: "ACCESS_TOKEN" # to change
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+
+      - name: Set git config to use access token
+        run: git config --global url.https://$ACCESS_TOKEN@github.com/.insteadOf https://github.com
+
+      - name: Running go unit tests for all files
+        run: go test -v -tags=ut ./...
+
+      - name: Run necessary containers for testing
+        run: docker-compose up -d
+
+      - name: Running go integration tests for all files
+        run: go test -v -tags=it ./...

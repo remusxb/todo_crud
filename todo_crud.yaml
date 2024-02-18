@@ -1,0 +1,9 @@
+server:
+  host: "0.0.0.0"
+  port: "8080"
+  read_timeout: "5s"
+  write_timeout: "5s"
+  shutdown_timeout: "5s"
+
+version: true
+verbose: true
