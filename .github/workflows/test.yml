@@ -13,12 +13,12 @@ jobs:
       GOPRIVATE: github.com/remusxb/*
       ACCESS_TOKEN: "ACCESS_TOKEN" # to change
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.21
+          go-version: 1.22
 
       - name: Set git config to use access token
         run: git config --global url.https://$ACCESS_TOKEN@github.com/.insteadOf https://github.com
