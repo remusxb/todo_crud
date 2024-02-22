@@ -65,7 +65,7 @@ func main() {
 		logLevel.Set(slog.LevelDebug)
 	}
 
-	db, err := database.Connect()
+	db, err := database.Connect(cfg.DBConfig)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %s", err.Error())
 	}

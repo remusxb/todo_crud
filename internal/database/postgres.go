@@ -2,14 +2,21 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	_ "github.com/lib/pq"
 )
 
-func Connect() (*sql.DB, error) {
+func Connect(cfg Config) (*sql.DB, error) {
 	// Database connection string
-	connStr := "postgres://postgres:postgres@db/main?sslmode=disable"
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s/%s?sslmode=disable",
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Name,
+	)
 
 	// Open a connection to the database
 	db, err := sql.Open("postgres", connStr)
