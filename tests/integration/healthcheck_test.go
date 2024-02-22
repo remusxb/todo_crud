@@ -14,12 +14,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/remusxb/todo_crud/internal/app/handler"
 	"github.com/remusxb/todo_crud/internal/app/routes"
 	"github.com/remusxb/todo_crud/internal/app/usecase"
 	"github.com/remusxb/todo_crud/internal/metrics"
 	"github.com/remusxb/todo_crud/pkg/dto"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
