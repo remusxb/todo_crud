@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -23,12 +22,12 @@ type Server struct {
 	shutdownTimeout time.Duration
 }
 
-func InitServer(ctx context.Context, srvConfig Config, promHandler http.Handler, middlewares ...any) *Server {
+func NewServer(ctx context.Context, cfg Config) *Server {
 	app := fiber.New(fiber.Config{
 		Prefork:      false,
 		AppName:      "todo_crud",
-		ReadTimeout:  srvConfig.ReadTimeout,
-		WriteTimeout: srvConfig.WriteTimeout,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
 		JSONEncoder:  sonic.Marshal,
 		JSONDecoder:  sonic.Unmarshal,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -63,19 +62,21 @@ func InitServer(ctx context.Context, srvConfig Config, promHandler http.Handler,
 		HTTP:            app,
 		ctx:             ctx,
 		notify:          make(chan error, 1),
-		addr:            fmt.Sprintf("%s:%d", srvConfig.Host, srvConfig.Port),
-		shutdownTimeout: srvConfig.ShutdownTimeout,
+		addr:            fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		shutdownTimeout: cfg.ShutdownTimeout,
 	}
 
+	return &s
+}
+
+func (s *Server) InitServer(router routes.Router, middlewares ...any) {
 	// middlewares
 	for _, middleware := range middlewares {
 		s.HTTP.Use(middleware)
 	}
 
-	routes.RegisterHTTPRoutes(s.HTTP, promHandler)
+	router.RegisterHTTPRoutes()
 	s.start()
-
-	return &s
 }
 
 func (s *Server) start() {

@@ -5,5 +5,11 @@ server:
   write_timeout: "5s"
   shutdown_timeout: "5s"
 
+database:
+  user: "postgres"
+  password: "postgres"
+  host: "db"
+  name: "main"
+
 version: true
 verbose: true

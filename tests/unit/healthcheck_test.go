@@ -24,7 +24,7 @@ func TestHTTPHealth_Health(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: handler.Serving,
+			name: handler.HealthMessageOK,
 			args: args{
 				c: c,
 			},

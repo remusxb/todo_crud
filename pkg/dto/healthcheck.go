@@ -1,5 +1,6 @@
 package dto
 
-type HealthCheck struct {
-	Status string `json:"status"`
+type HealthCheckOutput struct {
+	Message string `json:"message,omitempty"`
+	Error   string `json:"error,omitempty"`
 }

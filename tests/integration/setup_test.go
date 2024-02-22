@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"context"
 	"log"
 	"os"
 	"testing"
@@ -11,7 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/remusxb/todo_crud/internal/app/handler"
 	"github.com/remusxb/todo_crud/internal/app/routes"
+	"github.com/remusxb/todo_crud/internal/app/usecase"
 	"github.com/remusxb/todo_crud/internal/metrics"
 )
 
@@ -33,16 +36,29 @@ func TestMain(m *testing.M) {
 }
 
 func setup() error {
-	// set env vars; e.g. : os.Setenv("ENV_KEY", "value")
+	// set env vars if needed; e.g. : os.Setenv("ENV_KEY", "value")
 
 	app := fiber.New()
 
-	// init prometheus handler
+	// init use cases
+	healthUseCase := usecase.NewHealthCheckUseCase(&healthRepoMock{
+		PingFunc: func(ctx context.Context) error {
+			return nil
+		},
+	})
+
+	// init handlers
+	healthHandler := handler.NewHealthCheckHandler(healthUseCase)
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(metrics.DefaultCollectors()...)
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
 
-	routes.RegisterHTTPRoutes(app, promHandler)
+	router := routes.Router{
+		Server:        app,
+		HealthHandler: healthHandler,
+		PromHandler:   promHandler,
+	}
+	router.RegisterHTTPRoutes()
 	ht.app = app
 
 	return nil
