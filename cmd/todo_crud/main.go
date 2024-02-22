@@ -88,7 +88,7 @@ func main() {
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
 
 	// create new server
-	srv := server.NewServer(rootCtx, cfg.SrvConfig)
+	srv := server.New(rootCtx, cfg.SrvConfig)
 
 	// init router
 	router := routes.Router{
@@ -98,7 +98,7 @@ func main() {
 	}
 
 	// start server
-	srv.InitServer(router, middlewares...)
+	srv.Init(router, middlewares...)
 
 	// Waiting signal
 	interrupt := make(chan os.Signal, 1)

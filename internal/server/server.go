@@ -22,7 +22,7 @@ type Server struct {
 	shutdownTimeout time.Duration
 }
 
-func NewServer(ctx context.Context, cfg Config) *Server {
+func New(ctx context.Context, cfg Config) *Server {
 	app := fiber.New(fiber.Config{
 		Prefork:      false,
 		AppName:      "todo_crud",
@@ -69,7 +69,7 @@ func NewServer(ctx context.Context, cfg Config) *Server {
 	return &s
 }
 
-func (s *Server) InitServer(router routes.Router, middlewares ...any) {
+func (s *Server) Init(router routes.Router, middlewares ...any) {
 	// middlewares
 	for _, middleware := range middlewares {
 		s.HTTP.Use(middleware)
