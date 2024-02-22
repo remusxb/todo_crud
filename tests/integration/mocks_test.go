@@ -9,8 +9,6 @@ import (
 
 type healthRepoMock struct {
 	PingFunc func(ctx context.Context) error
-
-	expectError error
 }
 
 func (rm *healthRepoMock) Ping(ctx context.Context) error {
@@ -18,9 +16,5 @@ func (rm *healthRepoMock) Ping(ctx context.Context) error {
 		return errors.New("repoMock.PingFunc: method is nil but repoMock.Ping was just called")
 	}
 
-	if rm.expectError != nil {
-		return rm.expectError
-	}
-
-	return rm.Ping(ctx)
+	return rm.PingFunc(ctx)
 }

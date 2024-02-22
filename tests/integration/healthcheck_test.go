@@ -3,40 +3,80 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remusxb/todo_crud/internal/app/handler"
+	"github.com/remusxb/todo_crud/internal/app/routes"
+	"github.com/remusxb/todo_crud/internal/app/usecase"
+	"github.com/remusxb/todo_crud/internal/metrics"
 	"github.com/remusxb/todo_crud/pkg/dto"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
-	t.Run("getHealth200", getHealth200)
-}
+	app := fiber.New()
+	repoMock := &healthRepoMock{}
 
-func getHealth200(t *testing.T) {
+	// init use cases
+	healthUseCase := usecase.NewHealthCheckUseCase(repoMock)
+
+	// init handlers
+	healthHandler := handler.NewHealthCheckHandler(healthUseCase)
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(metrics.DefaultCollectors()...)
+	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
+
+	router := routes.Router{
+		Server:        app,
+		HealthHandler: healthHandler,
+		PromHandler:   promHandler,
+	}
+	router.RegisterHTTPRoutes()
+
 	tcs := []struct {
 		name       string
 		wantStatus int
 		wantBody   dto.HealthCheckOutput
 		wantErr    error
+		PingFunc   func(ctx context.Context) error
 	}{
 		{
 			name:       "status serving",
 			wantStatus: http.StatusOK,
 			wantBody:   dto.HealthCheckOutput{Message: handler.HealthMessageOK},
 			wantErr:    nil,
+			PingFunc: func(ctx context.Context) error {
+				return nil
+			},
+		},
+		{
+			name:       "database not ready",
+			wantStatus: http.StatusOK,
+			wantBody: dto.HealthCheckOutput{
+				Message: handler.HealthMessageNotOK,
+				Error:   "failed to ping",
+			},
+			wantErr: nil,
+			PingFunc: func(ctx context.Context) error {
+				return errors.New("failed to ping")
+			},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			repoMock.PingFunc = tc.PingFunc
 			request := httptest.NewRequest(http.MethodGet, "/health", nil)
-			resp, err := ht.app.Test(request, -1) // -1 disables the response timeout
+			resp, err := app.Test(request, 1)
 
 			// Check for errors in the request
 			assert.Equal(t, tc.wantErr, err)
