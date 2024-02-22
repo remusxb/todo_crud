@@ -14,10 +14,10 @@ type Config struct {
 	TLS bool `mapstructure:"tls" env:"TLS"`
 
 	// CertFile to use for TLS
-	CertFile string `mapstructure:"tls_cert" env:"CERT_FILE"`
+	CertFile string `mapstructure:"cert_file" env:"CERT_FILE"`
 
 	// KeyFile to use for TLS
-	KeyFile string `mapstructure:"tls_key" env:"KEY_FILE"`
+	KeyFile string `mapstructure:"key_file" env:"KEY_FILE"`
 
 	// ReadTimeout is the maximum duration for reading the entire
 	// request, including the body.

@@ -16,12 +16,14 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"github.com/remusxb/todo_crud/internal/database"
 	"github.com/remusxb/todo_crud/internal/featureflags"
 	"github.com/remusxb/todo_crud/internal/server"
 )
 
 type (
 	SvcConfig = server.Config
+	DBConfig  = database.Config
 	FfConfig  = featureflags.Config
 )
 
@@ -30,6 +32,7 @@ type (
 // env - denotes key from environment
 type Config struct {
 	SrvConfig SvcConfig `mapstructure:"server" env:"SERVER"`
+	DBConfig  DBConfig  `mapstructure:"database" env:"DATABASE"`
 	FfConfig  FfConfig  `mapstructure:"feature_flags" env:"FEATURE_FLAGS"`
 
 	// Version toggles printing the version.

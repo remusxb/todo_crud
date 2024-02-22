@@ -9,11 +9,14 @@ import (
 	"github.com/remusxb/todo_crud/internal/app/handler"
 )
 
-func RegisterHTTPRoutes(server *fiber.App, promHandler http.Handler) {
-	// init services
-	healthService := handler.HealthCheck{}
+type Router struct {
+	Server        *fiber.App
+	HealthHandler handler.HealthCheck
+	PromHandler   http.Handler
+}
 
+func (r Router) RegisterHTTPRoutes() {
 	// register routes
-	server.Get("/health", healthService.Health)
-	server.Get("/metrics", adaptor.HTTPHandler(promHandler))
+	r.Server.Get("/health", r.HealthHandler.Health)
+	r.Server.Get("/metrics", adaptor.HTTPHandler(r.PromHandler))
 }

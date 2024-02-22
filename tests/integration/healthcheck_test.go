@@ -3,50 +3,84 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remusxb/todo_crud/internal/app/handler"
+	"github.com/remusxb/todo_crud/internal/app/routes"
+	"github.com/remusxb/todo_crud/internal/app/usecase"
+	"github.com/remusxb/todo_crud/internal/metrics"
 	"github.com/remusxb/todo_crud/pkg/dto"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
-	t.Run("getHealth200", getHealth200)
-}
+	app := fiber.New()
+	repoMock := &healthRepoMock{}
 
-func getHealth200(t *testing.T) {
+	// init use cases
+	healthUseCase := usecase.NewHealthCheckUseCase(repoMock)
+
+	// init handlers
+	healthHandler := handler.NewHealthCheckHandler(healthUseCase)
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(metrics.DefaultCollectors()...)
+	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
+
+	router := routes.Router{
+		Server:        app,
+		HealthHandler: healthHandler,
+		PromHandler:   promHandler,
+	}
+	router.RegisterHTTPRoutes()
+
 	tcs := []struct {
 		name       string
 		wantStatus int
-		wantBody   dto.HealthCheck
-		wantErr    bool
+		wantBody   dto.HealthCheckOutput
+		wantErr    error
+		PingFunc   func(ctx context.Context) error
 	}{
 		{
 			name:       "status serving",
 			wantStatus: http.StatusOK,
-			wantBody:   dto.HealthCheck{Status: handler.Serving},
-			wantErr:    false,
+			wantBody:   dto.HealthCheckOutput{Message: handler.HealthMessageOK},
+			wantErr:    nil,
+			PingFunc: func(ctx context.Context) error {
+				return nil
+			},
+		},
+		{
+			name:       "database not ready",
+			wantStatus: http.StatusOK,
+			wantBody: dto.HealthCheckOutput{
+				Message: handler.HealthMessageNotOK,
+				Error:   "failed to ping",
+			},
+			wantErr: nil,
+			PingFunc: func(ctx context.Context) error {
+				return errors.New("failed to ping")
+			},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			repoMock.PingFunc = tc.PingFunc
 			request := httptest.NewRequest(http.MethodGet, "/health", nil)
-			resp, err := ht.app.Test(request, -1) // -1 disables the response timeout
+			resp, err := app.Test(request, 1)
 
 			// Check for errors in the request
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("Expected no error, but got %v", err)
-			}
-
-			// Check the HTTP status code
-			if resp.StatusCode != tc.wantStatus {
-				t.Fatalf("Expected status code %d, but got %d", tc.wantStatus, resp.StatusCode)
-			}
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.wantStatus, resp.StatusCode)
 
 			// Read the response body into a byte slice
 			body, err := io.ReadAll(resp.Body)
@@ -55,14 +89,12 @@ func getHealth200(t *testing.T) {
 			}
 
 			// Parse the response JSON
-			var responseBody dto.HealthCheck
+			var responseBody dto.HealthCheckOutput
 			if err := json.Unmarshal(body, &responseBody); err != nil {
 				t.Fatalf("Error unmarshaling JSON response: %v", err)
 			}
 
-			if !reflect.DeepEqual(responseBody, tc.wantBody) {
-				t.Fatalf("Response body different than expected. Expected: %+v; got: %+v", tc.wantBody, responseBody)
-			}
+			assert.EqualValues(t, tc.wantBody, responseBody)
 		})
 	}
 }

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -14,7 +15,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	flag "github.com/spf13/pflag"
 
+	_ "github.com/lib/pq"
+
+	"github.com/remusxb/todo_crud/internal/app/handler"
+	"github.com/remusxb/todo_crud/internal/app/repository"
+	"github.com/remusxb/todo_crud/internal/app/routes"
+	"github.com/remusxb/todo_crud/internal/app/usecase"
 	"github.com/remusxb/todo_crud/internal/config"
+	"github.com/remusxb/todo_crud/internal/database"
 	"github.com/remusxb/todo_crud/internal/metrics"
 	"github.com/remusxb/todo_crud/internal/server"
 	"github.com/remusxb/todo_crud/version"
@@ -57,17 +65,40 @@ func main() {
 		logLevel.Set(slog.LevelDebug)
 	}
 
+	db, err := database.Connect()
+	if err != nil {
+		log.Fatalf("Error connecting to database: %s", err.Error())
+	}
+
 	cfg.FfConfig.Initialize()
 	middlewares := initMiddlewares()
 	rootCtx, cancel := context.WithCancel(context.Background())
 
-	// init prometheus handler
+	// init repositories
+	healthRepo := repository.NewHealthCheckRepository(db)
+
+	// init use cases
+	healthUseCase := usecase.NewHealthCheckUseCase(healthRepo)
+
+	// init handlers
+	healthHandler := handler.NewHealthCheckHandler(healthUseCase)
+
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(metrics.DefaultCollectors()...)
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
 
+	// create new server
+	srv := server.NewServer(rootCtx, cfg.SrvConfig)
+
+	// init router
+	router := routes.Router{
+		Server:        srv.HTTP,
+		HealthHandler: healthHandler,
+		PromHandler:   promHandler,
+	}
+
 	// start server
-	srv := server.InitServer(rootCtx, cfg.SrvConfig, promHandler, middlewares...)
+	srv.InitServer(router, middlewares...)
 
 	// Waiting signal
 	interrupt := make(chan os.Signal, 1)
